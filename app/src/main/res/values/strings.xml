@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">TimeWarp</string>
+    <string name="clock_in">Timbratura Entrata</string>
+    <string name="clock_out">Timbratura Uscita</string>
+    <string name="export_excel">Esporta Excel</string>
+    <string name="department">Reparto</string>
+    <string name="select_department">Seleziona Reparto</string>
+    <string name="entry_time">Orario Entrata</string>
+    <string name="exit_time">Orario Uscita</string>
+    <string name="hours_worked">Ore Lavorate</string>
+    <string name="today_entries">Timbrature di Oggi</string>
+    <string name="no_entries">Nessuna timbratura registrata</string>
+    <string name="clocked_in">Entrata registrata</string>
+    <string name="clocked_out">Uscita registrata</string>
+    <string name="export_success">Excel esportato con successo</string>
+    <string name="export_error">Errore durante l\'esportazione</string>
+    <string name="permission_required">Permesso di scrittura richiesto</string>
+    <string name="in_progress">In corso…</string>
+    <string name="hours_format">%s ore</string>
+</resources>
