@@ -6,9 +6,16 @@ from datetime import datetime
 import os
 import json
 
-FILE_NAME = "orari_lavoro.xlsx"
 STATE_FILE = "timewarp_state.json"
 entrata = None
+
+# Genera il nome del file con timestamp del giorno
+def get_file_name(data=None):
+    if data is None:
+        data = datetime.now()
+    elif isinstance(data, str):
+        data = datetime.strptime(data, "%Y-%m-%d")
+    return f"orari_lavoro_{data.strftime('%Y%m%d')}.xlsx"
 
 # Carica stato entrata da file se esiste
 def carica_stato():
@@ -31,13 +38,14 @@ def salva_stato():
     except Exception:
         pass
 
-# Creazione file Excel con intestazioni se non esiste
-if not os.path.exists(FILE_NAME):
-    wb = Workbook()
-    ws = wb.active
-    ws.title = "Orari"
-    ws.append(["Data", "Reparto", "Entrata", "Uscita", "Ore Lavorate"])
-    wb.save(FILE_NAME)
+# Funzione per creare file Excel se non esiste
+def crea_file_se_non_esiste(file_name):
+    if not os.path.exists(file_name):
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Orari"
+        ws.append(["Data", "Reparto", "Entrata", "Uscita", "Ore Lavorate"])
+        wb.save(file_name)
 
 def registra_entrata():
     global entrata
@@ -59,7 +67,9 @@ def registra_uscita():
         return
 
     try:
-        wb = load_workbook(FILE_NAME)
+        file_name = get_file_name()
+        crea_file_se_non_esiste(file_name)
+        wb = load_workbook(file_name)
         ws = wb.active
         ws.append([
             datetime.now().strftime("%Y-%m-%d"),
@@ -68,7 +78,7 @@ def registra_uscita():
             uscita.strftime("%H:%M"),
             ore
         ])
-        wb.save(FILE_NAME)
+        wb.save(file_name)
 
         status_label.config(text=f"Uscita registrata: {uscita.strftime('%H:%M')} - {ore}h")
         entrata = None
@@ -95,10 +105,12 @@ def inserisci_manual():
             status_label.config(text="Errore: l'uscita non può essere prima dell'entrata!")
             return
 
-        wb = load_workbook(FILE_NAME)
+        file_name = get_file_name(data)
+        crea_file_se_non_esiste(file_name)
+        wb = load_workbook(file_name)
         ws = wb.active
         ws.append([data, reparto_m, entrata_m, uscita_m, ore])
-        wb.save(FILE_NAME)
+        wb.save(file_name)
 
         status_label.config(text=f"Turno manuale inserito: {data} {reparto_m} - {ore}h")
     except ValueError:
@@ -107,30 +119,49 @@ def inserisci_manual():
         status_label.config(text=f"Errore: {e}")
 
 def genera_grafico_mensile():
-    wb = load_workbook(FILE_NAME)
-    ws = wb.active
+    import glob
 
-    # Creiamo un foglio riepilogo mensile
-    if "Mensile" not in wb.sheetnames:
-        ws_summary = wb.create_sheet("Mensile")
-        ws_summary.append(["Mese", "Ore Totali"])
-    else:
-        ws_summary = wb["Mensile"]
-        ws_summary.delete_rows(2, ws_summary.max_row)  # reset dati
+    # Trova tutti i file di orari nella directory corrente
+    files = glob.glob("orari_lavoro_*.xlsx")
 
-    # Calcolo ore per mese
+    if not files:
+        status_label.config(text="Nessun file di orari trovato!")
+        return
+
+    # Calcolo ore per mese aggregando tutti i file
     mesi = {}
-    for row in ws.iter_rows(min_row=2, values_only=True):
-        data, ore = row[0], row[4]
-        if data and ore:
-            # Gestisce sia stringhe che oggetti datetime da Excel
-            if isinstance(data, str):
-                mese = datetime.strptime(data, "%Y-%m-%d").strftime("%B %Y")
-            else:
-                mese = data.strftime("%B %Y")
-            mesi[mese] = mesi.get(mese, 0) + ore
+    for file in files:
+        try:
+            wb = load_workbook(file)
+            ws = wb.active
 
-    for mese, ore in mesi.items():
+            for row in ws.iter_rows(min_row=2, values_only=True):
+                if not row[0] or not row[4]:
+                    continue
+
+                data, ore = row[0], row[4]
+                # Gestisce sia stringhe che oggetti datetime da Excel
+                if isinstance(data, str):
+                    mese = datetime.strptime(data, "%Y-%m-%d").strftime("%B %Y")
+                else:
+                    mese = data.strftime("%B %Y")
+                mesi[mese] = mesi.get(mese, 0) + ore
+            wb.close()
+        except Exception:
+            continue
+
+    if not mesi:
+        status_label.config(text="Nessun dato da elaborare!")
+        return
+
+    # Crea un file di riepilogo mensile
+    summary_file = "orari_riepilogo_mensile.xlsx"
+    wb_summary = Workbook()
+    ws_summary = wb_summary.active
+    ws_summary.title = "Riepilogo Mensile"
+    ws_summary.append(["Mese", "Ore Totali"])
+
+    for mese, ore in sorted(mesi.items()):
         ws_summary.append([mese, ore])
 
     # Grafico comparativo
@@ -145,8 +176,8 @@ def genera_grafico_mensile():
     chart.set_categories(cats)
 
     ws_summary.add_chart(chart, "D2")
-    wb.save(FILE_NAME)
-    status_label.config(text="Grafico mensile aggiornato in Excel!")
+    wb_summary.save(summary_file)
+    status_label.config(text=f"Grafico mensile salvato in {summary_file}!")
 
 # Carica stato all'avvio
 carica_stato()
