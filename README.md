@@ -66,12 +66,24 @@ timewarp/
 
 Per compilare il progetto:
 
+**Linux/Mac:**
 ```bash
 ./gradlew build
 ```
 
+**Windows:**
+```cmd
+gradlew build
+```
+
 Per installare su dispositivo:
 
+**Linux/Mac:**
 ```bash
 ./gradlew installDebug
+```
+
+**Windows:**
+```cmd
+gradlew installDebug
 ```
