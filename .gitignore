@@ -12,6 +12,7 @@
 
 # Package Files #
 *.jar
+!gradle/wrapper/gradle-wrapper.jar
 *.war
 *.nar
 *.ear
@@ -29,9 +30,6 @@ replay_pid*
 # Gradle files
 .gradle/
 build/
-gradle/
-gradlew
-gradlew.bat
 local.properties
 
 # Android Studio
